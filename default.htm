@@ -1,0 +1,404 @@
+<!--
+Instructions:
+	https://www.themoviedb.org/documentation/api
+	- Using "THE MOVIE DB" (API above) to fetch data, create a descriptive page about the movie “Guardians of the Galaxy” in an appropriate layout. Select 5 to 10 properties of the API response to display.
+	- Bonus: Style the page so it is elegant
+
+Note:
+	- You are allowed to use native Javascript as well as Jquery
+
+ -->
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>ex12</title>
+		<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+		<style>
+			html {
+			    font-size: 16px
+			}
+
+			body {
+			    font-family: 'Open Sans',sans-serif;
+			    background-color: #565264
+			}
+
+			.wrapper {
+			    display: grid;
+			    grid-column-start: 1;
+			    grid-template-columns: 1fr auto;
+			    grid-template-rows: 450px auto;
+			    grid-column-gap: 10px;
+			    grid-row-gap: 10px;
+			    max-width: 1400px;
+			    margin: 0 auto
+			}
+
+			.box {
+			    background-color: #d6cfcb;
+			    color: #565264;
+			    border-radius: 5px;
+			    padding: 20px
+			}
+
+			.box h2,.box h3 {
+			    margin: 0;
+			    padding: 0
+			}
+
+			.box p{
+				margin: 10px 0
+			}
+
+			.header {
+			    background-repeat: no-repeat;
+			    background-size: contain;
+			    position: relative;
+			    padding: 0;
+			    color: #fff
+			}
+
+			.header .genres {
+			    position: absolute;
+			    top: 0;
+			    right: 10px;
+			    list-style: none
+			}
+
+			.header .genres li {
+			    background-color: #fff;
+			    color: #565264;
+			    float: left;
+			    border-radius: 5px;
+			    margin-left: 10px;
+			    padding: 5px 10px
+			}
+
+			.header div {
+			    position: absolute;
+			    bottom: 0;
+			    background-color: rgba(0,0,0,.5);
+			    width: 100%;
+			    padding: 20px;
+			    box-sizing: border-box;
+			    border-radius: 0 0 5px 5px
+			}
+
+			.header h1,.header h2 {
+			    font-size: 3em;
+			    line-height: 1em;
+			    margin: 0
+			}
+
+			.header h2 {
+			    font-size: 1.5em;
+			    line-height: 40px;
+			    font-weight: 400
+			}
+
+			.trailers {
+				display: grid;
+			    grid-column-start: 1;
+			    grid-template-columns: 1fr 1fr;
+			    grid-template-rows: auto;
+			    grid-column-gap: 10px;
+			    grid-row-gap: 10px;
+			    margin-top:10px;
+			    text-align: center;
+			}
+
+			.cast,.crew,.header {
+			    grid-column-start: 1;
+			    grid-column-end: 4
+			}
+
+			.credits li,.poster {
+			    text-align: center
+			}
+
+			.poster img {
+			    margin-top: 10px
+			}
+
+			.cast,.crew {
+			    position: relative
+			}
+
+			.collapse {
+			    overflow: hidden;
+			    height: 325px
+			}
+
+			.credits {
+			    display: grid;
+			    grid-template-columns: repeat(8,1fr);
+			    grid-column-gap: 10px;
+			    grid-row-gap: 10px;
+			    list-style: none;
+			    margin: 10px auto 20px;
+			    padding: 0
+			}
+
+			.credits li img {
+			    display: block;
+			    margin: auto
+			}
+
+			.expander,.expander:hover {
+			    transition: color .1s ease-out,background .1s linear
+			}
+
+			.expander {
+			    width: 100%;
+			    border-radius: 0 0 5px 5px;
+			    position: absolute;
+			    bottom: 0;
+			    left: 0;
+			    text-align: center;
+			    padding: 5px;
+			    box-sizing: border-box;
+			    text-decoration: none;
+			    font-weight: 700;
+			    background-color: #ccb7ae;
+			    color: #1f2d3d
+			}
+
+			.expander:hover {
+			    background-color: #a6808c;
+			    color: #fff
+			}
+		</style>
+		<!-- Head -->
+	</head>
+	<body>
+		<div id="app"></div>
+		<!-- Body -->
+		<script>
+
+		(function(){
+			class Page {
+				constructor(movieId, $el) {
+					this.apiKey = 'cff9ed6654840a76558e373b303cab8e'
+					this.movieId = movieId
+					this.$el = $el
+					this.data = {}
+
+
+					new Promise((resolve, reject) => {
+						return this.getDetails().then(resolve);
+					}).then(() => { 
+						return this.getCredits();
+					}).then(() => { 
+						return this.getTrailers();
+					}).then(()=>{
+						this.render();
+					})
+
+				}
+
+				getDetails() {
+					return fetch(`https://api.themoviedb.org/3/movie/${this.movieId}?api_key=${this.apiKey}`)
+						.then(response => response.json())
+						.then(response => this.data.details = response)
+				}
+
+				getCredits() {
+					return fetch(`https://api.themoviedb.org/3/movie/${this.movieId}/credits?api_key=${this.apiKey}`)
+						.then(response => response.json())
+						.then(response => this.data.credits = response)
+				}
+
+				getTrailers() {
+					return fetch(`https://api.themoviedb.org/3/movie/${this.movieId}/videos?api_key=${this.apiKey}`)
+						.then(response => response.json())
+						.then(response => this.data.trailers = response.results)
+				}
+
+				render() {
+					// Create Component Instances
+					this.header = new Header(this.data.details)
+					this.synopsis = new Synopsis(this.data)
+					this.poster = new Poster(this.data.details)
+					this.cast = new Cast(this.data.credits)
+					this.crew = new Crew(this.data.credits)
+
+					// Build main template and add to page
+					this.$el.innerHTML = `
+						<div class="wrapper">
+							${this.header.render()}
+						    ${this.synopsis.render()}
+						    ${this.poster.render()}
+						    ${this.cast.render()}
+						    ${this.crew.render()}
+						</div>
+					`
+
+					// Set events if any
+					this.cast.events()
+					this.crew.events()
+				}
+			}
+
+			class Component {
+				constructor(data) {
+					this.data = data
+				}
+
+				getProfilePic (profile_path) {
+					if(profile_path){
+						return `https://image.tmdb.org/t/p/w138_and_h175_face${profile_path}`
+					} else {
+						return 'http://placekitten.com/138/175'
+					}
+				}
+
+				creditCollapse(classWithCollapse) {
+					const $trigger = document.querySelector(`.${classWithCollapse} .expander`)
+					const $el = document.querySelector(`.${classWithCollapse}`)
+					const showMoreText = document.createTextNode('Show More')
+					const showLessText = document.createTextNode('Show Less')
+
+					$trigger.addEventListener('click', e => {
+
+						if ($el.classList.contains('collapse')) {
+							$el.classList.remove('collapse')
+							$trigger.innerHTML = ""
+							$trigger.appendChild(showLessText)
+						} else {
+							$el.classList.add('collapse')
+							$trigger.innerHTML = ""
+							$trigger.appendChild(showMoreText);
+						}
+						
+						e.preventDefault()
+					});
+					
+				}
+			}
+
+			class Header extends Component{
+				render() {
+					const movie = this.data
+					this.genres = new Genres(movie)
+
+					return `
+						<header class="box header" style="background-image: url('https://image.tmdb.org/t/p/w1400_and_h450_face/${movie.backdrop_path}');">
+							${this.genres.render()}
+							<div>
+								<h1>${movie.original_title}</h1>
+								<h2>${movie.tagline}</h3>
+							</div>
+						</header>
+					`;
+				}
+			}
+
+			class Synopsis extends Component{
+				render() {
+					const movie = this.data.details
+					const trailers = this.data.trailers
+					const d = new Date(movie.release_date)
+
+					return `<section class="box synopsis">
+								<h2>Synopsis</h2>
+								<p>${movie.overview}</p>
+								<h2>Budget</h2>
+								<p>$${movie.budget.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+								<h2>Revenue</h2>
+								<p>$${movie.revenue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+								<h2>Release_date</h2>
+								<p>${d.toLocaleDateString()}</p>
+								<h2>Popularity</h2>
+								<p>${movie.popularity.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</p>
+								<h2>Trailers</h2>
+								<div class="trailers">
+									<div><iframe width="420" height="315"src="https://www.youtube.com/embed/${trailers[0].key}"></iframe></div>
+									<div><iframe width="420" height="315"src="https://www.youtube.com/embed/${trailers[1].key}"></iframe></div>
+								</div>
+							</section>`
+				}
+			}
+
+			class Poster extends Component {
+				render() {
+					const movie = this.data
+
+					return `<section class="poster box">
+								<h3>Part of</h3>
+								<h2>${movie.belongs_to_collection.name}</h2>
+								<img src="https://image.tmdb.org/t/p/w300_and_h450_bestv2/${movie.belongs_to_collection.poster_path}" />
+							</section>`
+				}
+			}
+
+			class Genres extends Component {
+				render() {
+					const movie = this.data
+
+					return `<ul class="genres">
+								${movie.genres.map(genre => `
+									<li>${genre.name}</li>
+								`).join('')}
+							</ul>`
+				}
+			}
+
+			class Cast extends Component {
+				render() {
+					const movie = this.data
+
+					return `<div class="cast box collapse">
+								<h2>Cast</h2>
+								<ul class="credits">
+								${movie.cast.map(member => `
+									<li>
+										<img src="${this.getProfilePic(member.profile_path)}" /><br />
+										<strong>${member.name}</strong><br />
+										${member.character}
+									</li>
+								`).join('')}
+								</ul>
+								<a href="#" class="expander">Show More</a>
+							</div>`
+				}
+
+				events() {
+					this.creditCollapse('cast');					
+				}
+			}
+
+
+			class Crew extends Component {
+				render() {
+					const movie = this.data
+
+					return `<div class="crew box collapse">
+								<h2>Crew</h2>
+								<ul class="credits">
+								${movie.crew.map(member => `
+									<li>
+										<img src="${this.getProfilePic(member.profile_path)}" /><br />
+										<strong>${member.name}</strong><br />
+										${member.job}
+									</li>
+								`).join('')}
+								</ul>
+								<a href="#" class="expander">Show More</a>
+							</div>`
+				}
+
+				events() {
+					this.creditCollapse('crew');
+				}
+			}
+
+		
+
+			const page = new Page(118340, document.getElementById('app'))
+
+		})();
+
+		</script>
+	</body>
+</html>
